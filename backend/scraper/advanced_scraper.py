@@ -135,26 +135,26 @@ async def run_scraping_pipeline():
             )
             
             for source in current_targets:
-            page = await context.new_page()
-            try:
-                logger.info(f"🕸️ Navigating to {source['url']}...")
-                # We catch timeouts aggressively so a dead gov site doesn't stall the cron
-                # For actual scraping we would go to the real URL. As a fallback/demo we wait minimally
-                # and use a dummy page content as if we fetched it.
-                await page.goto("about:blank", wait_until="domcontentloaded", timeout=15000)
-                
-                # Retrieve content
-                content = await page.content()
-                
-                # Extract
-                schemes = await extract_with_heuristics(content, source['url'])
-                all_extracted_schemes.extend(schemes)
-                logger.info(f"✅ Extracted {len(schemes)} schemes from {source['url']}")
-                
-            except Exception as e:
-                logger.error(f"❌ Failed to scrape {source['url']}: {e}")
-            finally:
-                await page.close()
+                page = await context.new_page()
+                try:
+                    logger.info(f"🕸️ Navigating to {source['url']}...")
+                    # We catch timeouts aggressively so a dead gov site doesn't stall the cron
+                    # For actual scraping we would go to the real URL. As a fallback/demo we wait minimally
+                    # and use a dummy page content as if we fetched it.
+                    await page.goto("about:blank", wait_until="domcontentloaded", timeout=15000)
+                    
+                    # Retrieve content
+                    content = await page.content()
+                    
+                    # Extract
+                    schemes = await extract_with_heuristics(content, source['url'])
+                    all_extracted_schemes.extend(schemes)
+                    logger.info(f"✅ Extracted {len(schemes)} schemes from {source['url']}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Failed to scrape {source['url']}: {e}")
+                finally:
+                    await page.close()
                 
         await browser.close()
         
