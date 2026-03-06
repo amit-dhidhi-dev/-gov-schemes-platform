@@ -1,0 +1,55 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
+from datetime import timedelta
+from app.db.database import get_db
+from app.models.models import User
+from app.schemas.user import UserCreate, User as UserSchema, Token, UserUpdate
+from app.core.security import (
+    verify_password, get_password_hash, create_access_token,
+    get_user_by_email, get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
+)
+
+router = APIRouter(prefix="/api/auth", tags=["Auth"])
+
+@router.post("/register", response_model=UserSchema)
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(
+        (User.email == user.email) | (User.phone == user.phone)
+    ).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email or phone already registered")
+    hashed_pw = get_password_hash(user.password)
+    db_user = User(**user.model_dump(exclude={"password"}), hashed_password=hashed_pw)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@router.post("/login", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = get_user_by_email(db, email=form_data.username)
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token = create_access_token(data={"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me", response_model=UserSchema)
+def get_me(current_user: User = Depends(get_current_active_user)):
+    return current_user
+
+@router.put("/me", response_model=UserSchema)
+def update_me(
+    user_update: UserUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    for field, value in user_update.model_dump(exclude_unset=True).items():
+        setattr(current_user, field, value)
+    db.commit()
+    db.refresh(current_user)
+    return current_user

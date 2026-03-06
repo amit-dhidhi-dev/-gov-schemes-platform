@@ -1,0 +1,41 @@
+name: Scheduled Scraper Pipeline
+
+on:
+  schedule:
+    # Run every 12 hours
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+    # Allows manual trigger from GitHub UI
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        playwright install chromium
+        
+    - name: Run Advanced Scraper
+      working-directory: ./backend
+      env:
+        # Supabase/Neon PostgreSQL URL should be set in GitHub Repository Secrets
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      run: |
+        # Create a small script to directly run the pipeline without starting the FastAPI server
+        echo 'import asyncio' > run_scraper.py
+        echo 'from scraper.advanced_scraper import run_scraping_pipeline' >> run_scraper.py
+        echo 'if __name__ == "__main__":' >> run_scraper.py
+        echo '    asyncio.run(run_scraping_pipeline())' >> run_scraper.py
+        python run_scraper.py
