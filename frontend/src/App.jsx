@@ -13,6 +13,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 
+
 function Footer() {
     return (
         <footer className="border-t border-gray-100 bg-white mt-16 py-8">
@@ -56,6 +57,8 @@ function App() {
                         </main>
                         <Footer />
                     </div>
+                    {/* vercel  Analytics */}
+
                 </AuthProvider>
             </Router>
         </HelmetProvider>
