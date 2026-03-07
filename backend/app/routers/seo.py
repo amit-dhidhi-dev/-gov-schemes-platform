@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 from app.db.database import get_db
@@ -15,7 +16,7 @@ def get_sitemap(db: Session = Depends(get_db)):
     schemes = db.query(Scheme).all()
     
     # Base URL of the frontend - in production this would be the actual domain
-    base_url = "http://localhost:5173"
+    base_url = os.environ.get("FRONTEND_URL", "http://localhost:5173").rstrip("/")
     
     # Start XML string
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
